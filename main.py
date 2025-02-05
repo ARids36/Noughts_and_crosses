@@ -8,6 +8,7 @@ from ascii import title, player_win, computer_win, draw
 # Functions
 def draw_grid():
     """Draws the board in the terminal"""
+
     clear_screen()
     print(title)
     print(f"-------------\n"
@@ -21,6 +22,7 @@ def draw_grid():
 
 def player_turn():
     """Allows the player to place a marker"""
+
     print("Player turn (X) - Enter 0-8")
     try:
         choice = int(input("Enter a square: "))
@@ -40,48 +42,50 @@ def player_turn():
 
 def ai_turn():
     """Allows the AI to place a marker
-       The function follows a hierarchy of searching for winning moves, blocking the players winning moves, then
-       placing a random marker"""
+       The function scores each of the available squares based on the opportunities available from that square,
+       with the scoring methods detailed below. The AI then places a marker in the highest scoring square """
 
     print("Computer turn (O):")
     time.sleep(1)
-    # Search for winning moves
-    for lst in search_pattern:  # Loop through search patterns
-        count = 0
-        for square in lst:  # Find if patterns can win
-            if board[square] == "O":
-                count += 1
-        if count == 2:  # If patterns can win, check to see if remaining square is empty and mark
-            for square in lst:
-                if board[square] == " ":
-                    board[square] = "O"
-                    draw_grid()
-                    return
 
-    # If no winning moves are found, block opponent
-    for lst in search_pattern:  # Loop through search patterns
-        count = 0
-        for square in lst:  # Find if patterns can win
-            if board[square] == "X":
-                count += 1
-        if count == 2:  # If patterns can win, mark the remaining square if it's empty
-            for square in lst:
-                if board[square] == " ":
-                    board[square] = "O"
-                    draw_grid()
-                    return
+    '''
+    If pattern = X O _  =   -1
+    If pattern = _ _ _  =   1
+    If pattern = X _ _  =   2
+    If pattern = O _ _  =   3
+    If pattern = X X _  =   10
+    If pattern = O O _  =   15
+    '''
+    scores = []
+    available_squares = [i for i in range(0, 9) if board[i] == " "]  # Check available squares
+    for av_square in available_squares:  # Loop through all available squares
+        av_square_score = 0
+        for lst in search_pattern:  # Loop through all search pattern
+            if av_square in lst:  # Check if nominated square is in search pattern
+                pattern_markers = [board[i] for i in lst]
+                if pattern_markers.count("X") == 1 and pattern_markers.count("O") == 1:
+                    av_square_score -= 1
+                elif pattern_markers.count("X") == 1:
+                    av_square_score += 2
+                elif pattern_markers.count("O") == 1:
+                    av_square_score += 3
+                elif pattern_markers.count("X") == 2:
+                    av_square_score += 10
+                elif pattern_markers.count("O") == 2:
+                    av_square_score += 15
+                else:
+                    av_square_score += 1
+        scores.append((av_square, av_square_score))
 
-    # No critical moves - place random square
-    if board[4] == " ":  # Maybe remove if it's too predictable
-        board[4] = "O"
-    else:
-        available_squares = [i for i in range(0, 8) if board[i] == " "]
-        board[random.choice(available_squares)] = "O"
+    scores.sort(key=lambda x: x[1], reverse=True)
+    best_squares = [i for (i, j) in scores if j == scores[0][1]]
+    board[random.choice(best_squares)] = "O"
     draw_grid()
 
 
 def is_win():
-    """Check for a winning line"""
+    """Checks for a winning line"""
+
     for lst in search_pattern:  # Loop through search patterns
         x_count = 0
         o_count = 0
@@ -137,7 +141,7 @@ while running:
         if is_win():
             print(player_win)
             game_is_on = False
-        elif len([i for i in range(0, 8) if board[i] == " "]) == 0:
+        elif len([i for i in range(0, 9) if board[i] == " "]) == 0:
             print(draw)
             game_is_on = False
         else:
@@ -145,7 +149,7 @@ while running:
             if is_win():
                 print(computer_win)
                 game_is_on = False
-            elif len([i for i in range(0, 8) if board[i] == " "]) == 0:
+            elif len([i for i in range(0, 9) if board[i] == " "]) == 0:
                 print(draw)
                 game_is_on = False
 
@@ -154,7 +158,6 @@ while running:
     if rematch == "Y":
         game_is_on = True
         board = 9*[" "]
-
     elif rematch == "N":
         running = False
         print("Exiting")
